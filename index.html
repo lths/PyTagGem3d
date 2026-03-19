@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PyTagGem3D — Valve & Name Tag Generator</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header>
+    <h1>PyTagGem3D</h1>
+    <span class="subtitle">Valve &amp; Name Tag STL Generator</span>
+  </header>
+
+  <div class="app-layout">
+    <!-- LEFT PANEL: Controls -->
+    <aside class="panel panel-controls">
+      <section class="section">
+        <h2>Tag Dimensions</h2>
+        <label>Width (mm)<input type="number" id="tagWidth" value="60" min="10" max="300" step="0.5" /></label>
+        <label>Height (mm)<input type="number" id="tagHeight" value="30" min="10" max="300" step="0.5" /></label>
+        <label>Thickness (mm)<input type="number" id="tagThickness" value="3" min="0.5" max="20" step="0.1" /></label>
+        <label>Corner Radius (mm)<input type="number" id="cornerRadius" value="3" min="0" max="20" step="0.5" /></label>
+      </section>
+
+      <section class="section">
+        <h2>Mounting Hole</h2>
+        <label class="checkbox-label">
+          <input type="checkbox" id="holeEnabled" checked />
+          Enable Hole
+        </label>
+        <label>Layout
+          <select id="holeLayout">
+            <option value="top-center">Top Center</option>
+            <option value="left-right">Left &amp; Right (sides)</option>
+            <option value="top-corners">Top Left &amp; Right</option>
+          </select>
+        </label>
+        <label>Hole Diameter (mm)<input type="number" id="holeDiameter" value="5" min="1" max="20" step="0.5" /></label>
+        <label>Hole Margin (mm)<input type="number" id="holeMargin" value="6" min="2" max="30" step="0.5" />
+          <span class="field-hint">Distance from hole center to nearest edge</span>
+        </label>
+      </section>
+
+      <section class="section">
+        <h2>Text</h2>
+        <label>Line 1 (Top)
+          <input type="text" id="textLine1" value="VALVE-001" maxlength="30" />
+        </label>
+        <label>Line 2 (Bottom)
+          <input type="text" id="textLine2" value="N/O" maxlength="30" />
+        </label>
+        <label>Font Size (mm)<input type="number" id="fontSize" value="6" min="2" max="30" step="0.5" /></label>
+        <label>Text Depth (mm)<input type="number" id="textDepth" value="0.8" min="0.1" max="5" step="0.1" /></label>
+        <label>Text Style
+          <select id="textStyle">
+            <option value="emboss">Embossed (raised)</option>
+            <option value="engrave">Engraved (cut in)</option>
+          </select>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="mirrorText" />
+          Mirror text on back face
+        </label>
+      </section>
+
+      <section class="section">
+        <h2>Export</h2>
+        <label>Filename Prefix<input type="text" id="filenamePrefix" value="tag" /></label>
+        <button class="btn btn-primary" id="btnExportSingle">Export STL</button>
+      </section>
+
+      <section class="section">
+        <h2>Batch Import</h2>
+        <p class="hint">Upload a CSV with header row. Supported columns:<br/>
+          <code>name</code> (required), <code>line1</code>, <code>line2</code>,
+          <code>width</code>, <code>height</code>, <code>thickness</code>,
+          <code>corner_radius</code>, <code>hole_enabled</code>, <code>hole_layout</code>,
+          <code>hole_diameter</code>, <code>hole_margin</code>, <code>font_size</code>,
+          <code>text_depth</code>, <code>text_style</code>, <code>mirror_text</code><br/>
+          Missing columns use current UI values.
+        </p>
+        <label class="file-label" for="csvFile">Choose CSV File</label>
+        <input type="file" id="csvFile" accept=".csv,.txt" style="display:none" />
+        <div id="batchStatus" class="batch-status"></div>
+        <div id="batchProgressWrap" style="display:none">
+          <div class="batch-progress" id="batchProgressText"></div>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" id="batchProgressBar"></div></div>
+        </div>
+        <button class="btn btn-secondary" id="btnBatchExport" disabled>Export Batch ZIP</button>
+      </section>
+    </aside>
+
+    <!-- CENTER: 3D Preview -->
+    <main class="panel panel-preview">
+      <div class="preview-toolbar">
+        <button class="btn btn-sm" id="btnResetView">Reset View</button>
+        <button class="btn btn-sm" id="btnToggleWire">Wireframe</button>
+        <span class="view-hint">Drag to rotate • Scroll to zoom • Right-drag to pan</span>
+      </div>
+      <div id="preview3d"></div>
+      <div class="preview-info" id="previewInfo">Loading…</div>
+      <div id="warningBanner" class="warning-banner" style="display:none"></div>
+      <div id="fontStatus" class="font-status" style="display:none">⚠ Font unavailable — text will not appear in export</div>
+    </main>
+  </div>
+
+  <!-- Scripts (loaded as modules) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/",
+      "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.8/build/index.module.js",
+      "three-bvh-csg": "https://cdn.jsdelivr.net/npm/three-bvh-csg@0.0.17/build/index.module.js"
+    }
+  }
+  </script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
