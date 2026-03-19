@@ -1,0 +1,20 @@
+# Dependencies (if ever switched to a bundler)
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+*.swp
+*.swo
+
+# Local dev
+*.local
+.env
+
+# Generated output (don't commit exported STLs)
+*.stl
+*.zip
