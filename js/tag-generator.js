@@ -104,7 +104,7 @@ function addCircleHole(shape, cx, cy, r) {
 //  Tag body
 // ─────────────────────────────────────────────
 
-export function buildTagBody(params) {
+export function buildTagBody(params, forExport = false) {
   const { width, height, thickness, cornerRadius,
           holeEnabled, holeDiameter, holeMargin, holeLayout,
           edgeType, edgeSize } = params;
@@ -134,7 +134,7 @@ export function buildTagBody(params) {
     bevelEnabled:   useBevel,
     bevelThickness: bevelSize,   // how far bevel steps in along Z (top/bottom faces)
     bevelSize:      bevelSize,   // how far bevel steps in along XY (perimeter edges)
-    bevelSegments:  edgeType === 'fillet' ? 6 : 1,   // 1 = flat chamfer, 6 = smooth fillet
+    bevelSegments:  edgeType === 'fillet' ? (forExport ? 2 : 6) : 1,
     steps:          1,
   };
 
@@ -328,18 +328,29 @@ function buildCutterText(text, font, params, yOffset, face = 'front') {
 // ─────────────────────────────────────────────
 
 function csgEngrave(bodyGeo, cutterGeos) {
-  const bodyBrush = new Brush(bodyGeo, _csgMat);
+  // Split cutters into front (z > 0) and back (z ≤ 0) groups and run one
+  // pass per group. Merging front+back into a single cutter spanning the full
+  // body thickness can confuse the boolean solver; keeping them separate is safer.
+  const front = [], back = [];
+  for (const g of cutterGeos) {
+    g.computeBoundingBox();
+    (g.boundingBox.getCenter(new THREE.Vector3()).z > 0 ? front : back).push(g);
+  }
+
+  let bodyBrush = new Brush(bodyGeo, _csgMat);
   bodyBrush.updateMatrixWorld(true);
 
-  // Merge all cutters into one geometry so the BVH is built once
-  // and a single subtraction pass handles all text on all faces.
-  const combinedCutter = mergeGeometries(cutterGeos, false);
-  const cutterBrush = new Brush(combinedCutter, _csgMat);
-  cutterBrush.updateMatrixWorld(true);
+  for (const group of [front, back]) {
+    if (!group.length) continue;
+    const merged = group.length > 1 ? mergeGeometries(group, false) : group[0];
+    const cutterBrush = new Brush(merged, _csgMat);
+    cutterBrush.updateMatrixWorld(true);
+    const result = _csgEvaluator.evaluate(bodyBrush, cutterBrush, SUBTRACTION);
+    result.geometry.computeVertexNormals();
+    bodyBrush = result;
+  }
 
-  const result = _csgEvaluator.evaluate(bodyBrush, cutterBrush, SUBTRACTION);
-  result.geometry.computeVertexNormals();
-  return result.geometry;
+  return bodyBrush.geometry;
 }
 
 function normalizeGeometryForExport(geometry) {
@@ -437,7 +448,7 @@ export function buildTag(params, font) {
  * Returns: { geometry: BufferGeometry, warnings: string[] }
  */
 export function buildTagForExport(params, font) {
-  const bodyGeo  = buildTagBody(params);
+  const bodyGeo  = buildTagBody(params, true);
   const lines    = font ? collectLines(params) : [];
   const faces    = params.mirrorText ? ['front', 'back'] : ['front'];
   const warnings = validateParams(params, []);
