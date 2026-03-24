@@ -328,24 +328,18 @@ function buildCutterText(text, font, params, yOffset, face = 'front') {
 // ─────────────────────────────────────────────
 
 function csgEngrave(bodyGeo, cutterGeos) {
-  let bodyBrush = new Brush(bodyGeo, _csgMat);
+  const bodyBrush = new Brush(bodyGeo, _csgMat);
   bodyBrush.updateMatrixWorld(true);
 
-  for (const cutterGeo of cutterGeos) {
-    try {
-      const cutterBrush = new Brush(cutterGeo, _csgMat);
-      cutterBrush.updateMatrixWorld(true);
+  // Merge all cutters into one geometry so the BVH is built once
+  // and a single subtraction pass handles all text on all faces.
+  const combinedCutter = mergeGeometries(cutterGeos, false);
+  const cutterBrush = new Brush(combinedCutter, _csgMat);
+  cutterBrush.updateMatrixWorld(true);
 
-      const result = _csgEvaluator.evaluate(bodyBrush, cutterBrush, SUBTRACTION);
-      result.updateMatrixWorld(true);
-      result.geometry.computeVertexNormals();
-      bodyBrush = result;
-    } catch (e) {
-      console.warn('CSG subtraction failed for one element:', e.message);
-    }
-  }
-
-  return bodyBrush.geometry;
+  const result = _csgEvaluator.evaluate(bodyBrush, cutterBrush, SUBTRACTION);
+  result.geometry.computeVertexNormals();
+  return result.geometry;
 }
 
 function normalizeGeometryForExport(geometry) {

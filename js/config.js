@@ -24,7 +24,7 @@ export const DEFAULT_PARAMS = {
 
   // ── Text ─────────────────────────────────────
   textLine1:    'VALVE-001',
-  textLine2:    'N/O',
+  textLine2:    '',
   fontSize:      8,         // mm
   textDepth:     0.8,       // mm
   textStyle:    'engrave',   // 'emboss' | 'engrave'
