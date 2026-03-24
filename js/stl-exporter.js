@@ -8,6 +8,19 @@ import * as THREE from 'three';
 
 const _exporter = new STLExporter();
 
+function toBinaryUint8Array(data) {
+  if (ArrayBuffer.isView(data)) {
+    const bytes = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    return new Uint8Array(bytes);
+  }
+
+  if (data instanceof ArrayBuffer) {
+    return new Uint8Array(data.slice(0));
+  }
+
+  throw new Error('Unsupported STL binary payload type.');
+}
+
 /**
  * Export a single geometry (or scene) as a binary STL file download.
  * @param {THREE.BufferGeometry|THREE.Object3D} source
@@ -24,7 +37,7 @@ export function downloadSTL(source, filename = 'tag') {
   }
 
   const result = _exporter.parse(obj, { binary: true });
-  const blob = new Blob([result], { type: 'application/octet-stream' });
+  const blob = new Blob([toBinaryUint8Array(result)], { type: 'application/octet-stream' });
   triggerDownload(blob, filename.endsWith('.stl') ? filename : filename + '.stl');
 }
 
@@ -44,7 +57,10 @@ export async function downloadBatchZIP(items, zipName = 'tags_batch') {
   for (const { geometry, filename } of items) {
     const mesh = new THREE.Mesh(geometry, mat);
     const stlData = _exporter.parse(mesh, { binary: true });
-    zip.file(filename.endsWith('.stl') ? filename : filename + '.stl', stlData);
+    zip.file(
+      filename.endsWith('.stl') ? filename : filename + '.stl',
+      toBinaryUint8Array(stlData),
+    );
   }
 
   const blob = await zip.generateAsync({ type: 'blob' });
