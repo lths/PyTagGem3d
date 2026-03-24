@@ -7,9 +7,11 @@ A browser-based 3D STL generator for valve and name tags. Design tags interactiv
 ## Features
 
 - **Interactive 3D preview** — orbit, zoom, and pan with mouse; wireframe toggle
-- **Fully parametric tags** — width, height, thickness, corner radius
-- **Mounting hole** — toggle on/off, set diameter and margin
-- **Two-line text** — embossed (raised) or engraved (true boolean cut using CSG)
+- **Fully parametric tags** — width, height, thickness, corner radius, edge treatment
+- **Mounting holes** — toggle on/off, choose layout (top-center, left/right, top-corners), set diameter and margin
+- **Two-line text** — embossed (raised) or engraved (true boolean CSG cut); optional back-face mirror
+- **Dongle font** — clean, industrial typeface included
+- **Configurable defaults** — edit `js/config.js` to set your baseline tag model
 - **Single STL export** — one click, one file
 - **Batch export** — import a CSV, generate all tags, download as a ZIP
 
@@ -47,6 +49,55 @@ npx serve .
 
 ---
 
+## Configuration
+
+Default tag parameters are defined in [`js/config.js`](js/config.js). Edit that file to change what the app starts with on every load — no UI interaction needed.
+
+```js
+// js/config.js
+export const DEFAULT_PARAMS = {
+  width:          76,       // mm
+  height:         19,       // mm
+  thickness:       3,       // mm
+  cornerRadius:    6,       // mm
+  edgeType:     'none',     // 'none' | 'chamfer' | 'fillet'
+  edgeSize:      0.5,
+  holeEnabled:   true,
+  holeLayout:   'left-right',
+  holeDiameter:  5,
+  holeMargin:    6,
+  textLine1:    'VALVE-001',
+  textLine2:    'N/O',
+  fontSize:      6,
+  textDepth:     0.8,
+  textStyle:    'engrave',  // 'emboss' | 'engrave'
+  mirrorText:    true,
+  filenamePrefix: 'tag',
+};
+```
+
+---
+
+## Font Setup
+
+The app uses the **Dongle** font. Pre-converted typeface files are included in the `fonts/` folder:
+
+| File | Weight |
+|---|---|
+| `fonts/Dongle_Regular.json` | Regular (default) |
+| `fonts/Dongle_Bold.json` | Bold |
+| `fonts/Dongle Light_Regular.json` | Light |
+
+To switch weights, update `FONT_URL` in [`js/app.js`](js/app.js):
+
+```js
+const FONT_URL = './fonts/Dongle_Bold.json';
+```
+
+To use a different font entirely, convert a `.ttf` file at [facetype.js](https://gero3.github.io/facetype.js/), save the result to `fonts/`, and update `FONT_URL`.
+
+---
+
 ## Interface Overview
 
 ```
@@ -63,18 +114,21 @@ npx serve .
 
 | Parameter | Default | Description |
 |---|---|---|
-| Width | 60 mm | Overall tag width |
-| Height | 30 mm | Overall tag height |
+| Width | 76 mm | Overall tag width |
+| Height | 19 mm | Overall tag height |
 | Thickness | 3 mm | Overall tag thickness |
-| Corner Radius | 3 mm | Rounding on all four corners (0 = sharp) |
+| Corner Radius | 6 mm | Rounding on all four corners (0 = sharp) |
+| Edge Treatment | None | `None`, `Chamfer` (flat 45°), or `Fillet` (rounded) |
+| Edge Size | 0.5 mm | Depth/radius of chamfer or fillet |
 
 ### Mounting Hole
 
 | Parameter | Default | Description |
 |---|---|---|
 | Enable Hole | On | Toggle the mounting hole |
+| Layout | Left & Right | `Top Center`, `Left & Right`, or `Top Left & Right` |
 | Hole Diameter | 5 mm | Diameter of the through-hole |
-| Hole Margin | 6 mm | Distance from hole center to the top edge |
+| Hole Margin | 6 mm | Distance from hole center to the nearest edge |
 
 ### Text
 
@@ -84,7 +138,8 @@ npx serve .
 | Line 2 | N/O | Bottom text line (leave blank for one line) |
 | Font Size | 6 mm | Character height |
 | Text Depth | 0.8 mm | How far the text rises or cuts in |
-| Text Style | Embossed | **Embossed** = text raised above surface; **Engraved** = text cut into surface (true CSG boolean subtract) |
+| Text Style | Engraved | **Embossed** = text raised above surface; **Engraved** = text cut in via CSG boolean subtract |
+| Mirror on Back | On | Duplicates text readable from both faces |
 
 ### Preview Controls
 
@@ -115,11 +170,11 @@ The file downloads as `<prefix>.stl`, ready to open in any slicer (Cura, PrusaSl
 Upload a `.csv` file with a header row. Only the `name` column is required; all others fall back to the current UI values.
 
 ```csv
-name,line1,line2,width,height,thickness,corner_radius,hole_enabled,hole_diameter,hole_margin,font_size,text_depth,text_style
-VALVE-001,VALVE-001,N/O,60,30,3,3,true,5,6,6,0.8,emboss
-VALVE-002,VALVE-002,N/C,60,30,3,3,true,5,6,6,0.8,emboss
-PUMP-001,PUMP-001,BYPASS,60,30,3,3,true,5,6,6,1.0,engrave
-DRAIN-01,DRAIN-01,,50,25,3,2,false,,,5,0.8,emboss
+name,line1,line2,width,height,thickness,corner_radius,edge_type,edge_size,hole_enabled,hole_layout,hole_diameter,hole_margin,font_size,text_depth,text_style,mirror_text
+VALVE-001,VALVE-001,N/O,76,19,3,6,none,,true,left-right,5,6,6,0.8,engrave,true
+VALVE-002,VALVE-002,N/C,76,19,3,6,none,,true,left-right,5,6,6,0.8,engrave,true
+PUMP-001,PUMP-001,BYPASS,76,19,3,6,none,,true,left-right,5,6,6,0.8,engrave,true
+DRAIN-01,DRAIN-01,,60,19,3,6,none,,false,,,6,0.8,engrave,false
 ```
 
 **Column reference:**
@@ -129,18 +184,20 @@ DRAIN-01,DRAIN-01,,50,25,3,2,false,,,5,0.8,emboss
 | `name` | string | `VALVE-001` | **Required.** Used as the STL filename |
 | `line1` | string | `VALVE-001` | Top text; defaults to `name` if blank |
 | `line2` | string | `N/O` | Bottom text; blank for single-line |
-| `width` | number | `60` | mm |
-| `height` | number | `30` | mm |
+| `width` | number | `76` | mm |
+| `height` | number | `19` | mm |
 | `thickness` | number | `3` | mm |
-| `corner_radius` | number | `3` | mm, 0 for sharp corners |
-| `edge_type` | string | `chamfer` | `none`, `chamfer`, or `fillet` |
+| `corner_radius` | number | `6` | mm, 0 for sharp corners |
+| `edge_type` | string | `none` | `none`, `chamfer`, or `fillet` |
 | `edge_size` | number | `0.5` | mm — depth/radius of chamfer or fillet |
 | `hole_enabled` | bool | `true` | `true`/`false` or `1`/`0` |
+| `hole_layout` | string | `left-right` | `top-center`, `left-right`, or `top-corners` |
 | `hole_diameter` | number | `5` | mm |
-| `hole_margin` | number | `6` | mm from hole center to top edge |
+| `hole_margin` | number | `6` | mm from hole center to nearest edge |
 | `font_size` | number | `6` | mm |
 | `text_depth` | number | `0.8` | mm |
-| `text_style` | string | `emboss` | `emboss` or `engrave` |
+| `text_style` | string | `engrave` | `emboss` or `engrave` |
+| `mirror_text` | bool | `true` | Mirror text on back face |
 
 A sample file is included: [`sample_tags.csv`](sample_tags.csv)
 
@@ -159,6 +216,7 @@ If any parameters produce geometry that may not print correctly, a red warning b
 
 - Hole diameter too large for the tag
 - Hole extends outside the tag boundary
+- Edge size too large for the tag thickness
 - Text wider than the tag
 - Text depth ≥ tag thickness
 - Font size too large for tag height
@@ -195,9 +253,14 @@ PyTagGem3d/
 ├── index.html              # App shell and UI layout
 ├── package.json            # Dependency version manifest
 ├── sample_tags.csv         # Example batch CSV
+├── fonts/
+│   ├── Dongle_Regular.json      # Default font (typeface.json format)
+│   ├── Dongle_Bold.json
+│   └── Dongle Light_Regular.json
 ├── css/
 │   └── style.css           # Dark-theme UI styles
 └── js/
+    ├── config.js           # Default tag parameters — edit to change startup defaults
     ├── app.js              # Main controller (UI, preview, export)
     ├── tag-generator.js    # 3D geometry builder (body + text + CSG)
     ├── stl-exporter.js     # STL and ZIP download

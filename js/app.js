@@ -8,6 +8,7 @@ import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { buildTag, buildTagForExport } from './tag-generator.js';
 import { downloadSTL, downloadBatchZIP } from './stl-exporter.js';
 import { parseBatchCSV } from './batch-processor.js';
+import { DEFAULT_PARAMS } from './config.js';
 
 // ─────────────────────────────────────────────
 //  Three.js scene
@@ -112,7 +113,7 @@ let loadedFont    = null;
 // ─────────────────────────────────────────────
 //  Font loading
 // ─────────────────────────────────────────────
-const FONT_URL    = 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/fonts/helvetiker_bold.typeface.json';
+const FONT_URL    = './fonts/Dongle_Regular.json';
 const fontStatus  = document.getElementById('fontStatus');
 
 new FontLoader().load(
@@ -447,6 +448,8 @@ function yieldToBrowser() {
 }
 
 // ─────────────────────────────────────────────
-//  Boot
+//  Boot — apply config defaults, then render
 // ─────────────────────────────────────────────
+applyParamsToUI(DEFAULT_PARAMS);
+$id('filenamePrefix').value = DEFAULT_PARAMS.filenamePrefix;
 rebuildPreview();
