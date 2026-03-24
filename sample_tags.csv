@@ -1,8 +1,8 @@
-name,line1,line2,width,height,thickness,corner_radius,hole_enabled,hole_layout,hole_diameter,hole_margin,font_size,text_depth,text_style,mirror_text
-VALVE-001,VALVE-001,N/O,60,30,3,3,true,top-center,5,6,6,0.8,emboss,false
-VALVE-002,VALVE-002,N/C,60,30,3,3,true,top-center,5,6,6,0.8,emboss,false
-VALVE-003,VALVE-003,ISOLATION,70,30,3,3,true,top-center,5,6,5,0.8,emboss,true
-PUMP-001,PUMP-001,BYPASS,60,30,3,3,true,top-center,5,6,6,1.0,engrave,false
-SENSOR-A1,SENSOR-A1,PRESSURE,65,30,3,3,true,top-corners,5,6,5.5,0.8,emboss,false
-PIPE-RACK,PIPE-RACK,,90,30,3,3,true,left-right,5,6,6,0.8,emboss,true
-DRAIN-01,DRAIN-01,,50,25,3,2,false,top-center,,,5,0.8,emboss,false
+name,line1,line2,width,height,thickness,corner_radius,edge_type,edge_size,hole_enabled,hole_layout,hole_diameter,hole_margin,font_size,text_depth,text_style,mirror_text
+VALVE-001,VALVE-001,N/O,60,30,3,3,chamfer,0.5,true,top-center,5,6,6,0.8,emboss,false
+VALVE-002,VALVE-002,N/C,60,30,3,3,chamfer,0.5,true,top-center,5,6,6,0.8,emboss,false
+VALVE-003,VALVE-003,ISOLATION,70,30,3,3,fillet,0.8,true,top-center,5,6,5,0.8,emboss,true
+PUMP-001,PUMP-001,BYPASS,60,30,3,3,chamfer,0.5,true,top-center,5,6,6,1.0,engrave,false
+SENSOR-A1,SENSOR-A1,PRESSURE,65,30,3,3,fillet,1.0,true,top-corners,5,6,5.5,0.8,emboss,false
+PIPE-RACK,PIPE-RACK,,90,30,3,3,none,,true,left-right,5,6,6,0.8,emboss,true
+DRAIN-01,DRAIN-01,,50,25,3,2,fillet,0.5,false,top-center,,,5,0.8,emboss,false

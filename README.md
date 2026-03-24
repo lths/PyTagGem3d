@@ -133,6 +133,8 @@ DRAIN-01,DRAIN-01,,50,25,3,2,false,,,5,0.8,emboss
 | `height` | number | `30` | mm |
 | `thickness` | number | `3` | mm |
 | `corner_radius` | number | `3` | mm, 0 for sharp corners |
+| `edge_type` | string | `chamfer` | `none`, `chamfer`, or `fillet` |
+| `edge_size` | number | `0.5` | mm — depth/radius of chamfer or fillet |
 | `hole_enabled` | bool | `true` | `true`/`false` or `1`/`0` |
 | `hole_diameter` | number | `5` | mm |
 | `hole_margin` | number | `6` | mm from hole center to top edge |

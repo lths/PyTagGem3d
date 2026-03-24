@@ -48,6 +48,9 @@ export function validateParams(params, textGeos = []) {
     }
   }
 
+  if ((edgeType === 'chamfer' || edgeType === 'fillet') && edgeSize >= thickness / 2)
+    warnings.push(`Edge size (${edgeSize}mm) must be less than half the thickness (${(thickness/2).toFixed(1)}mm).`);
+
   if (textDepth >= thickness)
     warnings.push(`Text depth (${textDepth}mm) must be less than tag thickness (${thickness}mm).`);
   if (fontSize > height * 0.6)
@@ -103,7 +106,8 @@ function addCircleHole(shape, cx, cy, r) {
 
 export function buildTagBody(params) {
   const { width, height, thickness, cornerRadius,
-          holeEnabled, holeDiameter, holeMargin, holeLayout } = params;
+          holeEnabled, holeDiameter, holeMargin, holeLayout,
+          edgeType, edgeSize } = params;
 
   const shape = roundedRectShape(width, height, cornerRadius);
 
@@ -118,14 +122,24 @@ export function buildTagBody(params) {
       addCircleHole(shape, -width / 2 + margin, height / 2 - margin, r);
       addCircleHole(shape,  width / 2 - margin, height / 2 - margin, r);
     } else {
-      // top-center
       addCircleHole(shape, 0, height / 2 - margin, r);
     }
   }
 
-  const geo = new THREE.ExtrudeGeometry(shape, {
-    depth: thickness, bevelEnabled: false, steps: 1,
-  });
+  // Bevel settings for chamfer / fillet
+  const useBevel  = edgeType === 'chamfer' || edgeType === 'fillet';
+  const bevelSize = useBevel ? Math.min(edgeSize, thickness / 2 - 0.05) : 0;
+  const extrudeSettings = {
+    depth:          thickness,
+    bevelEnabled:   useBevel,
+    bevelThickness: bevelSize,   // how far bevel steps in along Z (top/bottom faces)
+    bevelSize:      bevelSize,   // how far bevel steps in along XY (perimeter edges)
+    bevelSegments:  edgeType === 'fillet' ? 6 : 1,   // 1 = flat chamfer, 6 = smooth fillet
+    steps:          1,
+  };
+
+  const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+  // Re-center Z so tag is symmetric about z=0
   geo.translate(0, 0, -thickness / 2);
   geo.computeVertexNormals();
   return geo;

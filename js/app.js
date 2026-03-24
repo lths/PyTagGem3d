@@ -142,6 +142,8 @@ function getParams() {
     height:       n('tagHeight'),
     thickness:    n('tagThickness'),
     cornerRadius: n('cornerRadius'),
+    edgeType:     s('edgeType'),
+    edgeSize:     n('edgeSize'),
     holeEnabled:  b('holeEnabled'),
     holeLayout:   s('holeLayout'),
     holeDiameter: n('holeDiameter'),
@@ -241,7 +243,7 @@ function scheduleRebuild() {
 }
 
 [
-  'tagWidth','tagHeight','tagThickness','cornerRadius',
+  'tagWidth','tagHeight','tagThickness','cornerRadius','edgeType','edgeSize',
   'holeEnabled','holeLayout','holeDiameter','holeMargin',
   'textLine1','textLine2','fontSize','textDepth','textStyle','mirrorText',
 ].forEach(inputId => {
@@ -258,6 +260,13 @@ function syncHoleInputs() {
 }
 $id('holeEnabled').addEventListener('change', syncHoleInputs);
 syncHoleInputs();
+
+// Enable edge size input only when chamfer or fillet is selected
+function syncEdgeInputs() {
+  $id('edgeSize').disabled = $id('edgeType').value === 'none';
+}
+$id('edgeType').addEventListener('change', syncEdgeInputs);
+syncEdgeInputs();
 
 $id('btnResetView').addEventListener('click', () => {
   camera.position.set(0, 10, 130);
@@ -397,6 +406,9 @@ function applyParamsToUI(p) {
   set ('tagHeight',    p.height);
   set ('tagThickness', p.thickness);
   set ('cornerRadius', p.cornerRadius);
+  set ('edgeType',     p.edgeType);
+  set ('edgeSize',     p.edgeSize);
+  syncEdgeInputs();
   setb('holeEnabled',  p.holeEnabled);
   set ('holeLayout',   p.holeLayout);
   set ('holeDiameter', p.holeDiameter);

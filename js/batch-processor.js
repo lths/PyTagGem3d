@@ -84,6 +84,10 @@ function rowToParams(row, defaults) {
   /** Use row value if non-empty, else fallback string. */
   const str = (key, fallback) => (row[key] !== undefined && row[key] !== '') ? row[key] : fallback;
 
+  // Validate edge_type value
+  const rawEdge  = str('edge_type', defaults.edgeType).toLowerCase();
+  const edgeType = ['none', 'chamfer', 'fillet'].includes(rawEdge) ? rawEdge : defaults.edgeType;
+
   // Validate text_style value
   const rawStyle  = str('text_style', defaults.textStyle).toLowerCase();
   const textStyle = ['emboss', 'engrave'].includes(rawStyle) ? rawStyle : defaults.textStyle;
@@ -99,6 +103,8 @@ function rowToParams(row, defaults) {
     height:       num ('height',        defaults.height),
     thickness:    num ('thickness',     defaults.thickness),
     cornerRadius: num ('corner_radius', defaults.cornerRadius),
+    edgeType,
+    edgeSize:     num ('edge_size',     defaults.edgeSize),
     holeEnabled:  bool('hole_enabled',  defaults.holeEnabled),
     holeLayout,
     holeDiameter: num ('hole_diameter', defaults.holeDiameter),
