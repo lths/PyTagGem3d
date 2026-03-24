@@ -30,7 +30,7 @@ const _csgMat = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide });
 export function validateParams(params, textGeos = []) {
   const warnings = [];
   const { width, height, thickness, holeEnabled, holeDiameter, holeMargin,
-          holeLayout, textDepth } = params;
+          holeLayout, edgeType, edgeSize, textDepth } = params;
 
   if (holeEnabled) {
     const r = holeDiameter / 2;
@@ -60,10 +60,10 @@ export function validateParams(params, textGeos = []) {
     if (!bb) continue;
     const tw = bb.max.x - bb.min.x;
     const th = bb.max.y - bb.min.y;
-    if (tw > width * 0.92)
-      warnings.push(`Text is wider than the tag (${tw.toFixed(1)} mm vs ${(width * 0.92).toFixed(1)} mm available) — reduce font size or shorten text.`);
-    if (th > height * 0.92)
-      warnings.push(`Text is taller than the tag (${th.toFixed(1)} mm vs ${(height * 0.92).toFixed(1)} mm available) — reduce font size or use less text.`);
+    if (tw > width)
+      warnings.push(`Text is wider than the tag (${tw.toFixed(1)} mm vs ${width.toFixed(1)} mm available) — reduce font size or shorten text.`);
+    if (th > height)
+      warnings.push(`Text is taller than the tag (${th.toFixed(1)} mm vs ${height.toFixed(1)} mm available) — reduce font size or use less text.`);
   }
 
   return warnings;
