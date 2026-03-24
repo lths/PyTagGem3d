@@ -21,6 +21,36 @@ A browser-based 3D STL generator for valve and name tags. Design tags interactiv
 
 No build step is required. The app runs entirely in the browser using ES modules and CDN libraries.
 
+## Deploy to GitHub Pages
+
+This repository can be hosted directly as a static site on GitHub Pages.
+
+### One-time GitHub setup
+
+1. Push this repository to GitHub.
+2. Make sure your default branch is `main` or `master`.
+3. In GitHub, open **Settings** → **Pages**.
+4. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+
+This repo includes a workflow at `.github/workflows/deploy-pages.yml` that publishes the project root as a static website whenever you push to `main` or `master`.
+
+### Publish updates
+
+```bash
+git add .
+git commit -m "Set up GitHub Pages"
+git push origin <your-default-branch>
+```
+
+After the workflow completes, the app will be available at one of these URLs:
+
+- `https://<your-username>.github.io/<repo-name>/`
+- `https://<your-organization>.github.io/<repo-name>/`
+
+If the repository name is exactly `<your-username>.github.io`, the site will publish at the root domain instead:
+
+- `https://<your-username>.github.io/`
+
 ### Prerequisites
 
 - A modern browser (Chrome 89+, Edge 89+, Firefox 108+, Safari 16.4+)

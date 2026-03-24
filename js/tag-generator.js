@@ -244,13 +244,13 @@ function buildPreviewText(text, font, params, yOffset, face = 'front') {
       geo.translate(0, 0, -thickness / 2); // protrude from absolute back outer surface (above fillet)
     } else {
       geo.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1));
-      geo.translate(0, 0, bz);       // [bz, bz + safeDepth]  recessed into back flat face
+      geo.translate(0, 0, -thickness / 2); // recessed from absolute back outer surface
     }
   } else {
     if (textStyle === 'emboss') {
       geo.translate(0, 0, thickness / 2); // protrude from absolute front outer surface (above fillet)
     } else {
-      geo.translate(0, 0, fz - safeDepth);      // [fz−d, fz]  recessed from front flat face
+      geo.translate(0, 0, thickness / 2 - safeDepth); // recessed from absolute front outer surface
     }
   }
 
@@ -350,7 +350,7 @@ function collectLines(params) {
   const { textLine1, textLine2, fontSize } = params;
   const centerY  = getTextAreaCenterY(params);
   const hasTwo   = !!(textLine1 && textLine2);
-  const spacing  = hasTwo ? fontSize * 0.8 : 0;
+  const spacing  = hasTwo ? fontSize * 0.55 : 0;
   const lines    = [];
   if (textLine1) lines.push({ text: textLine1, yOffset: centerY + spacing });
   if (textLine2) lines.push({ text: textLine2, yOffset: centerY - spacing });
