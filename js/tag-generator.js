@@ -17,7 +17,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
-import { Evaluator, SUBTRACTION } from 'three-bvh-csg';
+import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg';
 
 const _csgEvaluator = new Evaluator();
 _csgEvaluator.useGroups = false;
@@ -328,18 +328,53 @@ function buildCutterText(text, font, params, yOffset, face = 'front') {
 // ─────────────────────────────────────────────
 
 function csgEngrave(bodyGeo, cutterGeos) {
-  let bodyMesh = new THREE.Mesh(bodyGeo, _csgMat);
+  let bodyBrush = new Brush(bodyGeo, _csgMat);
+  bodyBrush.updateMatrixWorld(true);
+
   for (const cutterGeo of cutterGeos) {
     try {
-      const cutterMesh = new THREE.Mesh(cutterGeo, _csgMat);
-      const result     = _csgEvaluator.evaluate(bodyMesh, cutterMesh, SUBTRACTION);
+      const cutterBrush = new Brush(cutterGeo, _csgMat);
+      cutterBrush.updateMatrixWorld(true);
+
+      const result = _csgEvaluator.evaluate(bodyBrush, cutterBrush, SUBTRACTION);
+      result.updateMatrixWorld(true);
       result.geometry.computeVertexNormals();
-      bodyMesh = result;
+      bodyBrush = result;
     } catch (e) {
       console.warn('CSG subtraction failed for one element:', e.message);
     }
   }
-  return bodyMesh.geometry;
+
+  return bodyBrush.geometry;
+}
+
+function normalizeGeometryForExport(geometry) {
+  const source = geometry.index ? geometry.toNonIndexed() : geometry.clone();
+  const drawStart = source.drawRange.start || 0;
+  const fullCount = source.attributes.position.count;
+  const drawCount = Number.isFinite(source.drawRange.count)
+    ? Math.min(source.drawRange.count, fullCount - drawStart)
+    : fullCount - drawStart;
+
+  const normalized = new THREE.BufferGeometry();
+  for (const [name, attribute] of Object.entries(source.attributes)) {
+    const itemSize = attribute.itemSize;
+    const start = drawStart * itemSize;
+    const end = (drawStart + drawCount) * itemSize;
+    const array = attribute.array.slice(start, end);
+    normalized.setAttribute(name, new THREE.BufferAttribute(array, itemSize, attribute.normalized));
+  }
+
+  normalized.setDrawRange(0, Infinity);
+  normalized.clearGroups();
+
+  if (!normalized.getAttribute('normal')) {
+    normalized.computeVertexNormals();
+  }
+
+  normalized.computeBoundingBox();
+  normalized.computeBoundingSphere();
+  return normalized;
 }
 
 // ─────────────────────────────────────────────
@@ -439,6 +474,6 @@ export function buildTagForExport(params, font) {
       }
     }
     const engravedBody = csgEngrave(bodyGeo, cutterGeos);
-    return { geometry: engravedBody, warnings };
+    return { geometry: normalizeGeometryForExport(engravedBody), warnings };
   }
 }
