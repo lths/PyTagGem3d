@@ -146,6 +146,27 @@ export function buildTagBody(params) {
 }
 
 // ─────────────────────────────────────────────
+//  Flat-face Z helper
+// ─────────────────────────────────────────────
+
+/**
+ * Returns the Z coordinate of the actual FLAT face of the tag after bevelling.
+ *
+ * ExtrudeGeometry with bevelThickness=b places the flat body at:
+ *   front flat face: z = +thickness/2 − b   (after the -thickness/2 translate)
+ *   back  flat face: z = −thickness/2 + b
+ *
+ * Without bevel (b=0) this collapses to ±thickness/2 as before.
+ */
+function getFlatFaceZ(params) {
+  const { thickness, edgeType, edgeSize } = params;
+  const b = (edgeType === 'chamfer' || edgeType === 'fillet')
+    ? Math.min(edgeSize, thickness / 2 - 0.05)
+    : 0;
+  return { front: thickness / 2 - b, back: -(thickness / 2 - b), bevel: b };
+}
+
+// ─────────────────────────────────────────────
 //  Text area vertical centering (avoids top holes)
 // ─────────────────────────────────────────────
 
@@ -210,34 +231,26 @@ function makeRawText(text, font, fontSize, depth) {
 function buildPreviewText(text, font, params, yOffset, face = 'front') {
   const { fontSize, textDepth, textStyle, thickness } = params;
   const safeDepth = Math.min(Math.max(textDepth, 0.1), thickness - 0.1);
+  const { front: fz, back: bz } = getFlatFaceZ(params);
 
   const raw = makeRawText(text, font, fontSize, safeDepth);
   if (!raw) return null;
   const { geo } = raw;
-
-  geo.translate(0, yOffset, 0);   // vertical centering
+  geo.translate(0, yOffset, 0);
 
   if (face === 'back') {
     if (textStyle === 'emboss') {
-      // Flip X (readability) + flip Z (extrude outward from back)
       geo.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, -1));
-      // geo now goes: z ∈ [0, −safeDepth]
-      // Translate to back surface: [−t/2, −t/2 − safeDepth]  ✓ proud of back face
-      geo.translate(0, 0, -thickness / 2);
+      geo.translate(0, 0, bz);       // [bz, bz − safeDepth]  proud of back flat face
     } else {
-      // Flip X only — keep +Z so text recesses toward tag centre from back
       geo.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1));
-      // geo goes: z ∈ [0, +safeDepth]
-      // Translate to back surface: [−t/2, −t/2 + safeDepth]  ✓ recessed into back face
-      geo.translate(0, 0, -thickness / 2);
+      geo.translate(0, 0, bz);       // [bz, bz + safeDepth]  recessed into back flat face
     }
   } else {
     if (textStyle === 'emboss') {
-      // Extrude forward from front face
-      geo.translate(0, 0, thickness / 2);   // [+t/2, +t/2 + safeDepth]  ✓
+      geo.translate(0, 0, fz);                  // [fz, fz + safeDepth]  proud of front flat face
     } else {
-      // Recess into front face: bottom of groove at (t/2 − safeDepth), mouth at t/2
-      geo.translate(0, 0, thickness / 2 - safeDepth);   // [+t/2−d, +t/2]  ✓
+      geo.translate(0, 0, fz - safeDepth);      // [fz−d, fz]  recessed from front flat face
     }
   }
 
@@ -256,15 +269,16 @@ function buildPreviewText(text, font, params, yOffset, face = 'front') {
 function buildEmbossText(text, font, params, yOffset, face = 'front') {
   const { fontSize, textDepth, thickness } = params;
   const safeDepth = Math.min(Math.max(textDepth, 0.1), thickness - 0.1);
+  const { front: fz, back: bz } = getFlatFaceZ(params);
   const raw = makeRawText(text, font, fontSize, safeDepth);
   if (!raw) return null;
   const { geo } = raw;
   geo.translate(0, yOffset, 0);
   if (face === 'back') {
     geo.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, -1));
-    geo.translate(0, 0, -thickness / 2);
+    geo.translate(0, 0, bz);
   } else {
-    geo.translate(0, 0, thickness / 2);
+    geo.translate(0, 0, fz);
   }
   geo.computeVertexNormals();
   return geo;
@@ -284,6 +298,7 @@ function buildCutterText(text, font, params, yOffset, face = 'front') {
   const safeDepth   = Math.min(Math.max(textDepth, 0.1), thickness - 0.1);
   const overshoot   = 1.0;
   const cutterDepth = safeDepth + overshoot;
+  const { front: fz, back: bz } = getFlatFaceZ(params);
 
   const raw = makeRawText(text, font, fontSize, cutterDepth);
   if (!raw) return null;
@@ -291,19 +306,17 @@ function buildCutterText(text, font, params, yOffset, face = 'front') {
   geo.translate(0, yOffset, 0);
 
   if (face === 'back') {
-    // Mirror X and flip Z so cutter points into tag from the back
+    // Mirror X and flip Z so cutter points into tag from the back flat face
     geo.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, -1));
-    // After scale(-1,1,-1): geometry goes from z=0 to z=−cutterDepth
-    // Translate so z_start = −thickness/2 + safeDepth (inside the tag)
-    //   z range: [−thickness/2 + safeDepth ,  −thickness/2 + safeDepth − cutterDepth]
-    //          = [−thickness/2 + safeDepth ,  −thickness/2 − overshoot]  ✓
-    geo.translate(0, 0, -thickness / 2 + safeDepth);
+    // z range: [bz + safeDepth,  bz + safeDepth − cutterDepth]
+    //        = [bz + safeDepth,  bz − overshoot]  ✓ starts inside flat face, exits beyond bevel
+    geo.translate(0, 0, bz + safeDepth);
   } else {
     // TextGeometry extrudes +Z, goes from z=0 to z=+cutterDepth
-    // Translate so z_start = thickness/2 − safeDepth (inside the tag)
-    //   z range: [thickness/2 − safeDepth ,  thickness/2 − safeDepth + cutterDepth]
-    //          = [thickness/2 − safeDepth ,  thickness/2 + overshoot]  ✓
-    geo.translate(0, 0, thickness / 2 - safeDepth);
+    // Translate so z_start = fz − safeDepth (inside the flat face)
+    //   z range: [fz − safeDepth ,  fz − safeDepth + cutterDepth]
+    //          = [fz − safeDepth ,  fz + overshoot]  ✓ starts inside flat face, exits beyond bevel
+    geo.translate(0, 0, fz - safeDepth);
   }
 
   geo.computeVertexNormals();
