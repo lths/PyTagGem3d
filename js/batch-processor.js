@@ -110,7 +110,7 @@ function rowToParams(row, defaults) {
     holeDiameter: num ('hole_diameter', defaults.holeDiameter),
     holeMargin:   num ('hole_margin',   defaults.holeMargin),
     textLine1:    str ('line1',         row.name),
-    textLine2:    str ('line2',         defaults.textLine2),
+    textLine2:    str ('line2',         ''),
     fontSize:     num ('font_size',     defaults.fontSize),
     textDepth:    num ('text_depth',    defaults.textDepth),
     textStyle,
